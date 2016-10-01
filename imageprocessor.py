@@ -4,11 +4,6 @@ from threading import Lock
 from PIL import Image
 from PIL import ImageFile
 import numpy
-try:
-    import psyco
-    psyco.full()
-except ImportError:
-    pass
 
 class imageProcessor(object):
     """

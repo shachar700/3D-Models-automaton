@@ -21,12 +21,6 @@ from win32gui import EnumWindows, GetWindowText, SetForegroundWindow, ShowWindow
 from imageprocessor import imageProcessor
 from HLMVModel import HLMVModelRegistryKey
 
-try:
-    import psyco
-    psyco.full()
-except ImportError:
-    pass
-
 global threads
 threads = [] # Used to track the threads used for blending
 wiki = wiki.Wiki('http://wiki.teamfortress.com/w/api.php')

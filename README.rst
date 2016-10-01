@@ -15,6 +15,7 @@ Requirements
 * pip install numpy
 
 If you want to upload automatically, you need
+
 * pip install poster
 
 If you have trouble with pip, install the Microsoft Visual C++ compiler.

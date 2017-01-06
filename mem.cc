@@ -3,7 +3,15 @@
 #include <windows.h> // everything else
 #include <psapi.h> // Module processing. Has to be after windows.h
 #include <tlhelp32.h> // getting the PID
-// gcc mem.cc -o mem -lpsapi
+// To compile: gcc mem.cc -o mem -lpsapi
+
+// http://stackoverflow.com/q/1387064
+void throwError() {
+  wchar_t message[256];
+  FormatMessageW(4096, NULL, GetLastError(), 1024, message, 256, NULL);
+  fprintf(stderr, "Error: %s\n", message);
+  exit(EXIT_FAILURE);
+}
 
 // https://github.com/erayarslan/WriteProcessMemory-Example
 // http://stackoverflow.com/q/32798185
@@ -50,33 +58,61 @@ int main(int argc, char *argv[]) {
   } else if (strcmp(argv[1], "trans") == 0) {
     // Translation offset: 0x237FE4 = 2326500
     offset = (LPVOID)((uintptr_t)base_addr + 2326500);
+  } else if (strcmp(argv[1], "bg") == 0) {
+    // Toggle Background offset: 0x23ACAC = 2337964
+    offset = (LPVOID)((uintptr_t)base_addr + 2337964);
+  } else if (strcmp(argv[1], "color") == 0) {
+    // Background color offset: 0x23ACE4 = 2338020
+    offset = (LPVOID)((uintptr_t)base_addr + 2338020);
   } else {
     fprintf(stderr, "Unknown type parameter: %s", argv[1]);
     exit(EXIT_FAILURE);
   }
   
   if (argc == 2) {
-    float values[3];
-    if (!ReadProcessMemory(handle, offset, &values, sizeof(values), NULL)) {
-      // For non-magic numbers, see http://stackoverflow.com/q/1387064
-      wchar_t message[256];
-      FormatMessageW(4096, NULL, GetLastError(), 1024, message, 256, NULL);
-      fprintf(stderr, "Error: %s\n", message);
-      exit(EXIT_FAILURE);
-    } else {
-      fprintf(stdout, "Current values of %s: %f %f %f\n", argv[1], values[0], values[1], values[2]);
+    if (strcmp(argv[1], "bg") == 0) {
+      int background;
+      if (ReadProcessMemory(handle, offset, &background, sizeof(background), NULL)) {
+        fprintf(stdout, "%d", background);
+      } else {
+        throwError();
+      }
+    } else if (strcmp(argv[1], "trans") == 0 || strcmp(argv[1], "rot") == 0) {
+      float values[3];
+      if (ReadProcessMemory(handle, offset, &values, sizeof(values), NULL)) {
+        fprintf(stdout, "%f %f %f", values[0], values[1], values[2]);
+      } else {
+        throwError();
+      }
+    } else if (strcmp(argv[1], "color") == 0) {
+      float values[4];
+      if (ReadProcessMemory(handle, offset, &values, sizeof(values), NULL)) {
+        fprintf(stdout, "%f %f %f %f", values[0], values[1], values[2], values[3]);
+      } else {
+        throwError();
+      }
     }
-  } else {
+  } else if (argc == 3) {
+    int background = atoi(argv[2]);
+    if (!WriteProcessMemory(handle, offset, &background, sizeof(background), NULL)) {
+      throwError();
+    }
+  } else if (argc == 5) {
     float values[3];
     values[0] = atof(argv[2]);
     values[1] = atof(argv[3]);
     values[2] = atof(argv[4]);
     if (!WriteProcessMemory(handle, offset, &values, sizeof(values), NULL)) {
-      // For non-magic numbers, see http://stackoverflow.com/q/1387064
-      wchar_t message[256];
-      FormatMessageW(4096, NULL, GetLastError(), 1024, message, 256, NULL);
-      fprintf(stderr, "Error: %s\n", message);
-      exit(EXIT_FAILURE);
+      throwError();
+    }
+  } else if (argc == 6) {
+    float values[4];
+    values[0] = atof(argv[2]);
+    values[1] = atof(argv[3]);
+    values[2] = atof(argv[4]);
+    values[3] = atof(argv[5]);
+    if (!WriteProcessMemory(handle, offset, &values, sizeof(values), NULL)) {
+      throwError();
     }
   }
   CloseHandle(handle);

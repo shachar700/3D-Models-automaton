@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
   HANDLE handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
   if (!handle) {
-    fprintf(stderr, "Couldn't get a handle on hlmv.\n");
+    fprintf(stderr, "Couldn't find HLMV. Is it open?\n");
     exit(EXIT_FAILURE);
   }
   EnumProcessModules(handle, module_list, sizeof(module_list) / sizeof(HMODULE), &num_results);

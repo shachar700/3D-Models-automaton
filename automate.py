@@ -5,7 +5,6 @@ Load up your model in HLMV, then run this script.
 """
 
 from __future__ import print_function
-from multiprocessing.pool import ThreadPool
 from time import sleep
 
 from PIL.ImageGrab import grab

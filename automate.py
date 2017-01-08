@@ -18,8 +18,6 @@ if __name__ == '__main__':
   # The cropping boundaries, as a pixel distance from the top left:
   # (left boundary, top boundary, right boundary, bottom boundary).
   crop_boundary = (1, 42, 1279, 510)
-  # File name for when the image is uploaded
-  item_name = 'User Darkid Test'
   number_of_images = 24 # Y rotations
   vertical_rotations = 1 # X rotations
   # Initial parameters. Mostly, you won't need to set these.
@@ -63,4 +61,4 @@ if __name__ == '__main__':
     print('#', end='')
     ip.blend(white_image, black_image)
   print('')
-  ip.stitch_and_upload(item_name + ' 3D.jpg')
+  ip.stitch_and_upload()

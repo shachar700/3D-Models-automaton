@@ -60,7 +60,7 @@ class ImageProcessor(object):
         ))
     self.images.append(blended_image)
 
-  def stitch_and_upload(self, title):
+  def stitch_and_upload(self):
     """
     Crops the images to a shared size, then pastes them together.
     Prompts for login and uploads to the wiki when done.
@@ -118,6 +118,7 @@ class ImageProcessor(object):
     ImageFile.MAXBLOCK = full_image.height * full_image.width * 8
     full_image.save(output_file, 'JPEG', quality=100, progressive=True, optimize=True)
     file = open(output_file, 'rb')
+    title = raw_input('Upload file name: ') + ' 3D.jpg'
     hash = md5(title.replace(' ', '_')).hexdigest()
     url = 'http://wiki.teamfortress.com/w/images/%s/%s/%s' % (hash[:1], hash[:2], title.replace(' ', '_'))
     description = '''{{#switch: {{{1|}}}

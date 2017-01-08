@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
   HMODULE module_list[1024];
   DWORD num_results;
   char name[64];
-  HMODULE base_addr;
+  uintptr_t base_addr;
   PROCESSENTRY32 entry;
   entry.dwSize = sizeof(entry);
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -46,24 +46,28 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < num_results / sizeof(HMODULE); i++) {
     GetModuleBaseName(handle, module_list[i], name, sizeof(name));
     if (strcmp(name, "hlmv.exe") == 0) {
-      base_addr = module_list[i];
+      base_addr = (uintptr_t)module_list[i];
       break; // All that setup just to get the base address and handle
     }
   }
   
   LPVOID offset;
-  if (strcmp(argv[1], "rot") == 0) {
-    // Rotation offset: 0x237FD8 = 2326488
-    offset = (LPVOID)((uintptr_t)base_addr + 2326488);
-  } else if (strcmp(argv[1], "trans") == 0) {
-    // Translation offset: 0x237FE4 = 2326500
-    offset = (LPVOID)((uintptr_t)base_addr + 2326500);
-  } else if (strcmp(argv[1], "bg") == 0) {
-    // Toggle Background offset: 0x23ACAC = 2337964
-    offset = (LPVOID)((uintptr_t)base_addr + 2337964);
-  } else if (strcmp(argv[1], "color") == 0) {
-    // Background color offset: 0x23ACE4 = 2338020
-    offset = (LPVOID)((uintptr_t)base_addr + 2338020);
+  if (strcmp(argv[1], "rot") == 0) { // Absolute Rotation
+    offset = (LPVOID)(base_addr + 0x237FD8);
+  } else if (strcmp(argv[1], "trans") == 0) { // Absolute Translation
+    offset = (LPVOID)(base_addr + 0x237FE4);
+  } else if (strcmp(argv[1], "color") == 0) { // Background color
+    offset = (LPVOID)(base_addr + 0x23ACE4);
+  } else if (strcmp(argv[1], "bg") == 0) { // Enable Background
+    offset = (LPVOID)(base_addr + 0x23ACAC);
+  } else if (strcmp(argv[1], "nm") == 0) { // Normal Maps
+    offset = (LPVOID)(base_addr + 0x23AC5F);
+  } else if (strcmp(argv[1], "spec") == 0) { // Specular
+    offset = (LPVOID)(base_addr + 0x23AC61);
+  } else if (strcmp(argv[1], "ob") == 0) { // Overbrightening
+    offset = (LPVOID)(base_addr + 0x23AD0E);
+  } else if (strcmp(argv[1], "lrot") == 0) { // Light Rotation
+    offset = (LPVOID)(base_addr + 0x23AC78);
   } else {
     fprintf(stderr, "Unknown type parameter: %s", argv[1]);
     exit(EXIT_FAILURE);
@@ -77,7 +81,11 @@ int main(int argc, char *argv[]) {
       } else {
         throwError();
       }
-    } else if (strcmp(argv[1], "trans") == 0 || strcmp(argv[1], "rot") == 0) {
+    } else if (
+      strcmp(argv[1], "trans") == 0 ||
+      strcmp(argv[1], "rot") == 0 ||
+      strcmp(argv[1], "lrot") == 0
+    ) {
       float values[3];
       if (ReadProcessMemory(handle, offset, &values, sizeof(values), NULL)) {
         fprintf(stdout, "%f %f %f", values[0], values[1], values[2]);

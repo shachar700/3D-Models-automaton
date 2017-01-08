@@ -1,155 +1,150 @@
-import os
-from threading import Lock
+"""
+Deals with image processing. This file is the bottleneck of the process, and
+is thus using numpy for efficiency. As a result, it is not very easy to read.
+"""
+from __future__ import print_function, division
+from hashlib import md5
+from os import path, remove
 
-from PIL import Image
+from PIL.Image import ANTIALIAS, fromarray, new
 from PIL import ImageFile
-import numpy
+from numpy import array, dstack, inner, uint8
+from wikitools import wiki
+from wikitools.wikifile import File
+from wikitools.page import Page
+wiki = wiki.Wiki('http://wiki.teamfortress.com/w/api.php')
 
-class imageProcessor(object):
+class ImageProcessor(object):
+  """
+  A class to handle all the imageprocessing done on the screenshots.
+  Deals with blending (finding transparency), cropping, and stitching.
+  """
+  def __init__(self, y_rotations, x_rotations):
+    self.target_dimension = 280
+    self.target_size = 512 * 1024 # 512 KB
+    self.cropping = {'left': [], 'top': [], 'right': [], 'bottom': []}
+    self.images = []
+    self.y_rotations = y_rotations
+    self.x_rotations = 2*x_rotations+1 # Total vertical rotations
+
+  def blend(self, white_image, black_image):
     """
-    A class to handle all the imageprocessing done on the screenshots.
-    Deals with blending (finding transparency), cropping, and stitching.
+    Blends the two images into an alpha image using percieved luminescence.
+    https://en.wikipedia.org/wiki/Luma_(video)#Use_of_relative_luminance
+    Then, finds the closest-cropped lines that are all white.
+    Uses numpy because traversing python arrays is very slow.
     """
-    def __init__(self, suffix=None):
-        self.targetDimension = 280
-        self.targetSize = 512 * 1024 # 512 KB
-        self.maxFrameSize = [0, 0]
-        self.finalSize = (0, 0)
-        self.minCrop = [999999, 999999, 999999, 999999]
-        self.cropped = []
-        self.suffix = suffix
-        self.lock = Lock()
-        self.n = 0
+    # This needs to be dtype=int to prevent an overflow when adding
+    white_arr = array(white_image, dtype=int)
+    black_arr = array(black_image, dtype=int)
+    blended_arr = dstack((
+        (white_arr[:, :, 0] + black_arr[:, :, 0])/2,
+        (white_arr[:, :, 1] + black_arr[:, :, 1])/2,
+        (white_arr[:, :, 2] + black_arr[:, :, 2])/2,
+        255 - inner(white_arr - black_arr, [.299, .587, .114])
+        ))
+    # Calculate crop lines
+    horizontal = blended_arr[:, :, 3].any(axis=0).nonzero()[0]
+    vertical = blended_arr[:, :, 3].any(axis=1).nonzero()[0]
+    self.cropping['left'].append(horizontal[0])
+    self.cropping['top'].append(vertical[0])
+    self.cropping['right'].append(horizontal[-1])
+    self.cropping['bottom'].append(vertical[-1])
+    # This needs to be a uint8 to render correctly.
+    blended_image = fromarray(blended_arr.astype(uint8), mode='RGBA')
+    blended_image = blended_image.crop((
+        horizontal[0],
+        vertical[0],
+        horizontal[-1],
+        vertical[-1]
+        ))
+    self.images.append(blended_image)
 
-    def getNumber(self):
-        """
-        Threading is almost never relevant since HLMV is slow to open.
-        But it might matter soon...
-        """
-        self.lock.acquire()
-        self.cropped.append(None)
-        value = self.n
-        self.n += 1
-        self.lock.release()
-        return value
-
-    def getBrightness(self, p):
-        """
-        Standard percieved luminescence.
-        https://en.wikipedia.org/wiki/Luma_(video)#Use_of_relative_luminance
-        """
-        return 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]
-
-    def blend(self, blackImg, whiteImg, name=None):
-        """
-        Blends the white image and the black image into an alpha image.
-        """
-        size = blackImg.size
-        blackImg = blackImg.convert('RGBA')
-        loadedBlack = blackImg.load()
-        loadedWhite = whiteImg.load()
-        for x in range(size[0]):
-            for y in range(size[1]):
-                blackPixel = loadedBlack[x, y]
-                whitePixel = loadedWhite[x, y]
-                loadedBlack[x, y] = (
-                    (blackPixel[0] + whitePixel[0]) / 2,
-                    (blackPixel[1] + whitePixel[1]) / 2,
-                    (blackPixel[2] + whitePixel[2]) / 2,
-                    255 - int(self.getBrightness(whitePixel) - self.getBrightness(blackPixel))
-                )
-        if name:
-            blackImg.save(name, 'PNG')
-        self.cropTask(self.getNumber(), blackImg)
-
-    def cropTask(self, n, img):
-        """
-        Finds the closest-cropped lines that are all white.
-        Uses numpy because traversing python arrays is slow
-        """
-        alpha = numpy.array(img, dtype=int)[:, :, 3]
-        horizontal = alpha.any(axis=0).nonzero()[0]
-        vertical = alpha.any(axis=1).nonzero()[0]
-        cropping = (horizontal[0], vertical[0], horizontal[-1], vertical[-1])
-        size = img.size[:]
-        newI = img.crop(cropping)
-        if size[0] > self.maxFrameSize[0]:
-            self.maxFrameSize[0] = size[0]
-        if size[1] > self.maxFrameSize[1]:
-            self.maxFrameSize[1] = size[1]
-        self.cropped[n] = (newI, cropping)
-        self.finalSize = (
-            self.finalSize[0] + newI.size[0],
-            max(self.finalSize[1], newI.size[1] + cropping[1])
+  def stitch_and_upload(self, title):
+    """
+    Crops the images to a shared size, then pastes them together.
+    Prompts for login and uploads to the wiki when done.
+    """
+    # Determining crop bounds
+    min_cropping = (
+        min(self.cropping['left']),
+        min(self.cropping['top']),
+        max(self.cropping['right']),
+        max(self.cropping['bottom'])
+    )
+    print('Min cropping: ' + str(min_cropping))
+    max_frame_size = (
+        min_cropping[2] - min_cropping[0],
+        min_cropping[3] - min_cropping[1]
         )
-        if cropping[0] < self.minCrop[0]:
-            self.minCrop[0] = cropping[0]
-        if cropping[1] < self.minCrop[1]:
-            self.minCrop[1] = cropping[1]
-        if size[0] - cropping[2] < self.minCrop[2]:
-            self.minCrop[2] = size[0] - cropping[2]
-        if size[1] - cropping[3] < self.minCrop[3]:
-            self.minCrop[3] = size[1] - cropping[3]
+    print('Max frame size: ' + str(max_frame_size))
+    target_ratio = self.target_dimension / max(max_frame_size)
+    print('Target scaling ratio: %f' % target_ratio)
+    max_frame_size = (
+        int(target_ratio * max_frame_size[0]),
+        int(target_ratio * max_frame_size[1])
+        )
+    print('Scaled max frame size: ' + str(max_frame_size))
 
-    def stitch(self, outpootFile, n, xRotNum):
-        """
-        Combines the cropped images together into one image.
-        """
-        print 'Minimum crop size:', self.minCrop
-        self.maxFrameSize = (
-            self.maxFrameSize[0] - self.minCrop[0] - self.minCrop[2],
-            self.maxFrameSize[1] - self.minCrop[1] - self.minCrop[3]
-        )
-        print 'Max frame size, including cropped area:', self.maxFrameSize
-        targetRatio = float(self.targetDimension) / float(max(self.maxFrameSize))
-        print 'Target scaling ratio:', targetRatio
-        print 'Computing rescaled sizes, and scaling...'
-        self.finalSize = (
-            # This is the width, the sum of all the image widths.
-            # n-1 because 1 pixel gap between images.
-            int(self.finalSize[0]*targetRatio + (n-1)),
-            # This is the height, which is the max of every image, scaled.
-            int((self.finalSize[1] - self.minCrop[1])*targetRatio)
-        )
-        fullImg = Image.new('RGBA', self.finalSize, (255, ) * 4)
-        currentOffset = 0
-        offsetMap = []
-        currentOffsetIntervaled = 0
-        print 'Building final image.'
-        for img, cropping in self.cropped:
-            newSize = (int(img.size[0] * targetRatio), int(img.size[1] * targetRatio))
-            resImg = img.resize(newSize, Image.ANTIALIAS)
-            normalizedLeftCrop = int((cropping[0] - self.minCrop[0]) * targetRatio)
-            normalizedTopCrop = int((cropping[1] - self.minCrop[1]) * targetRatio)
-            fullImg.paste(resImg, (currentOffsetIntervaled, normalizedTopCrop), resImg)
-            offsetMap += [currentOffset, resImg.size[1], normalizedLeftCrop]
-            currentOffset += resImg.size[0]
-            currentOffsetIntervaled += resImg.size[0] + 1
-        # Saving
-        print 'Done, saving final image to', outpootFile
-        if os.path.exists(outpootFile):
-            os.remove(outpootFile)
-        # Make sure there is enough allocated space to save the image as progressive
-        ImageFile.MAXBLOCK = self.finalSize[0] * self.finalSize[1] * 8
-        quality = 101
-        while not os.path.exists(outpootFile) or os.stat(outpootFile).st_size > self.targetSize:
-            quality -= 1
-            fullImg.save(outpootFile, 'JPEG', quality=quality, optimize=True, progressive=True)
-        print 'Saved to', outpootFile, 'with quality', quality
-        h = open(outpootFile + ' offsetmap.txt', 'wb')
-        h.write('''{{#switch: {{{1|}}}
-  | url = <nowiki></nowiki>
+    # Pasting together
+    full_image = new(mode='RGBA', color=(255, 255, 255, 255), size=((
+        (max_frame_size[0]+1)*self.y_rotations*self.x_rotations,
+        max_frame_size[1]
+    )))
+    curr_offset = 0
+    offset_map = []
+    for i, image in enumerate(self.images):
+      image = image.resize((
+          int(image.width*target_ratio),
+          int(image.height*target_ratio),
+          ), ANTIALIAS)
+      left_crop = int(target_ratio*(self.cropping['left'][i]-min_cropping[0]))
+      top_crop = int(target_ratio*(self.cropping['top'][i]-min_cropping[1]))
+      full_image.paste(image, (curr_offset, top_crop), image)
+      # Offset map adds 1 manually for some reason
+      offset_map += [curr_offset-i, image.height, left_crop]
+      # Increase by 1 each time to add a 1px gap
+      curr_offset += image.width+1
+    full_image = full_image.crop((
+        0,
+        0,
+        curr_offset,
+        max_frame_size[1],
+    ))
+    output_file = 'temp.jpg'
+    if path.exists(output_file):
+      remove(output_file)
+    # Ensure there is enough allocated space to save the image as progressive
+    ImageFile.MAXBLOCK = full_image.height * full_image.width * 8
+    full_image.save(output_file, 'JPEG', quality=100, progressive=True, optimize=True)
+    file = open(output_file, 'rb')
+    hash = md5(title.replace(' ', '_')).hexdigest()
+    url = 'http://wiki.teamfortress.com/w/images/%s/%s/%s' % (hash[:1], hash[:2], title.replace(' ', '_'))
+    description = '''{{#switch: {{{1|}}}
+  | url = <nowiki>%s</nowiki>
   | map = \n%d,%d,%d,%d,%s
   | height = %d
   | startframe = 16
-}}<noinclude>{{3D viewer}}[[Category:3D model images]]
-{{Externally linked}}''' % (
-    currentOffset,
-    int(self.maxFrameSize[0]*targetRatio),
-    self.finalSize[1],
-    xRotNum*2 + 1,
-    ','.join([str(o) for o in offsetMap]),
-    self.targetDimension))
-        h.close()
-        print 'Offset map saved to ' + outpootFile + ' offsetmap.txt'
-        
+  }}<noinclude>{{3D viewer}}[[Category:3D model images]]
+  {{Externally linked}}''' % (
+      url,
+      curr_offset,
+      max_frame_size[0],
+      max_frame_size[1],
+      self.x_rotations,
+      ','.join([str(o) for o in offset_map]),
+      self.target_dimension
+      )
+
+    username = raw_input('Wiki username: ')
+    while not wiki.isLoggedIn():
+      wiki.login(username)
+    print('Uploading %s...' % title)
+    target = File(wiki, title)
+    if target.exists:
+      res = target.upload(file, ignorewarnings=True)
+      Page(wiki, 'File:'+title).edit(text=description, redirect=False)
+    else:
+      res = target.upload(file, comment=description)
+    if res['upload']['result'] == 'Warning':
+      print('Failed for %s: %s' % (file, res['upload']['warnings']))

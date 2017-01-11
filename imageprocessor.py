@@ -3,6 +3,7 @@ Deals with image processing. This file is the bottleneck of the process, and
 is thus using numpy for efficiency. As a result, it is not very easy to read.
 """
 from __future__ import print_function, division
+from datetime import datetime
 from hashlib import md5
 from os import path, remove
 
@@ -122,13 +123,14 @@ class ImageProcessor(object):
     hash = md5(title.replace(' ', '_')).hexdigest()
     url = 'http://wiki.teamfortress.com/w/images/%s/%s/%s' % (hash[:1], hash[:2], title.replace(' ', '_'))
     description = '''{{#switch: {{{1|}}}
-  | url = <nowiki>%s</nowiki>
+  | url = <nowiki>%s?%s</nowiki>
   | map = \n%d,%d,%d,%d,%s
   | height = %d
   | startframe = 16
   }}<noinclude>{{3D viewer}}[[Category:3D model images]]
   {{Externally linked}}''' % (
       url,
+      datetime.strftime(datetime.utcnow(), '%Y%m%d%H%M%S'),
       curr_offset,
       max_frame_size[0],
       max_frame_size[1],

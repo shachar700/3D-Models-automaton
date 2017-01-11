@@ -12,7 +12,7 @@ from win32con import SW_MAXIMIZE
 from win32gui import EnumWindows, GetWindowText, SetForegroundWindow, ShowWindow
 
 from imageprocessor import ImageProcessor
-from HLMVmodel import HLMVModel
+from HLMVModel import HLMVModel
 
 if __name__ == '__main__':
   # The cropping boundaries, as a pixel distance from the top left:

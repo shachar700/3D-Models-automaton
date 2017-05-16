@@ -53,23 +53,23 @@ int main(int argc, char *argv[]) {
   
   LPVOID offset;
   if (strcmp(argv[1], "rot") == 0) { // Absolute Rotation
-    offset = (LPVOID)(base_addr + 0x237FD8);
+    offset = (LPVOID)(base_addr + 0x23D520);
   } else if (strcmp(argv[1], "trans") == 0) { // Absolute Translation
-    offset = (LPVOID)(base_addr + 0x237FE4);
+    offset = (LPVOID)(base_addr + 0x23D52C);
   } else if (strcmp(argv[1], "color") == 0) { // Background color
-    offset = (LPVOID)(base_addr + 0x23ACE4);
+    offset = (LPVOID)(base_addr + 0x240224);
   } else if (strcmp(argv[1], "bg") == 0) { // Enable Background
-    offset = (LPVOID)(base_addr + 0x23ACAC);
+    offset = (LPVOID)(base_addr + 0x2401EC);
   } else if (strcmp(argv[1], "nm") == 0) { // Normal Maps
-    offset = (LPVOID)(base_addr + 0x23AC5F);
+    offset = (LPVOID)(base_addr + 0x24019F);
   } else if (strcmp(argv[1], "spec") == 0) { // Specular
-    offset = (LPVOID)(base_addr + 0x23AC61);
+    offset = (LPVOID)(base_addr + 0x2401A1);
   } else if (strcmp(argv[1], "ob") == 0) { // Overbrightening
-    offset = (LPVOID)(base_addr + 0x23AD0E);
+    offset = (LPVOID)(base_addr + 0x24024E);
   } else if (strcmp(argv[1], "lrot") == 0) { // Light Rotation
-    offset = (LPVOID)(base_addr + 0x23AC78);
+    offset = (LPVOID)(base_addr + 0x2401B8);
   } else {
-    fprintf(stderr, "Unknown type parameter: %s", argv[1]);
+    fprintf(stderr, "Unknown type parameter: %s\n", argv[1]);
     exit(EXIT_FAILURE);
   }
   
@@ -88,14 +88,14 @@ int main(int argc, char *argv[]) {
     ) {
       float values[3];
       if (ReadProcessMemory(handle, offset, &values, sizeof(values), NULL)) {
-        fprintf(stdout, "%f %f %f", values[0], values[1], values[2]);
+        fprintf(stdout, "%f %f %f\n", values[0], values[1], values[2]);
       } else {
         throwError();
       }
     } else if (strcmp(argv[1], "color") == 0) {
       float values[4];
       if (ReadProcessMemory(handle, offset, &values, sizeof(values), NULL)) {
-        fprintf(stdout, "%f %f %f %f", values[0], values[1], values[2], values[3]);
+        fprintf(stdout, "%f %f %f %f\n", values[0], values[1], values[2], values[3]);
       } else {
         throwError();
       }

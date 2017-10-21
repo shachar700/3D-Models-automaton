@@ -117,7 +117,7 @@ class ImageProcessor(object):
       remove(output_file)
     # Ensure there is enough allocated space to save the image as progressive
     ImageFile.MAXBLOCK = full_image.height * full_image.width * 8
-    full_image.save(output_file, 'JPEG', quality=100, progressive=True, optimize=True)
+    full_image.convert('RGB').save(output_file, 'JPEG', quality=100, progressive=True, optimize=True)
     file = open(output_file, 'rb')
     title = raw_input('Upload file name: ') + ' 3D.jpg'
     hash = md5(title.replace(' ', '_')).hexdigest()

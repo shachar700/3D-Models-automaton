@@ -13,7 +13,7 @@ from numpy import array, dstack, inner, uint8
 from wikitools import wiki
 from wikitools.wikifile import File
 from wikitools.page import Page
-wiki = wiki.Wiki('http://wiki.teamfortress.com/w/api.php')
+wiki = wiki.Wiki('https://wiki.teamfortress.com/w/api.php')
 
 class ImageProcessor(object):
   """

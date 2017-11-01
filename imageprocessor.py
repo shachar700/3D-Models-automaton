@@ -121,7 +121,7 @@ class ImageProcessor(object):
     file = open(output_file, 'rb')
     title = raw_input('Upload file name: ') + ' 3D.jpg'
     hash = md5(title.replace(' ', '_')).hexdigest()
-    url = 'http://wiki.teamfortress.com/w/images/%s/%s/%s' % (hash[:1], hash[:2], title.replace(' ', '_'))
+    url = 'https://wiki.teamfortress.com/w/images/%s/%s/%s' % (hash[:1], hash[:2], title.replace(' ', '_'))
     description = '''{{#switch: {{{1|}}}
   | url = <nowiki>%s?%s</nowiki>
   | map = \n%d,%d,%d,%d,%s

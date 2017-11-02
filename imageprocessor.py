@@ -13,7 +13,7 @@ from numpy import array, dstack, inner, uint8
 from wikitools import wiki
 from wikitools.wikifile import File
 from wikitools.page import Page
-wiki = wiki.Wiki('http://wiki.teamfortress.com/w/api.php')
+wiki = wiki.Wiki('https://wiki.teamfortress.com/w/api.php')
 
 class ImageProcessor(object):
   """
@@ -121,7 +121,7 @@ class ImageProcessor(object):
     file = open(output_file, 'rb')
     title = raw_input('Upload file name: ') + ' 3D.jpg'
     hash = md5(title.replace(' ', '_')).hexdigest()
-    url = 'http://wiki.teamfortress.com/w/images/%s/%s/%s' % (hash[:1], hash[:2], title.replace(' ', '_'))
+    url = 'https://wiki.teamfortress.com/w/images/%s/%s/%s' % (hash[:1], hash[:2], title.replace(' ', '_'))
     description = '''{{#switch: {{{1|}}}
   | url = <nowiki>%s?%s</nowiki>
   | map = \n%d,%d,%d,%d,%s

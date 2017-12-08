@@ -4,20 +4,18 @@ Rotates and captures pictures of a 3d model.
 Load up your model in HLMV, then run this script.
 """
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 from time import sleep
 
 from PIL.ImageGrab import grab
 from win32con import SW_MAXIMIZE
-from win32gui import EnumWindows, GetWindowText, SetForegroundWindow, ShowWindow
+from win32gui import (EnumWindows, GetWindowRect, GetWindowText,
+  SetForegroundWindow, ShowWindow)
 
 from imageprocessor import ImageProcessor
 from HLMVModel import HLMVModel
 
 if __name__ == '__main__':
-  # The cropping boundaries, as a pixel distance from the top left:
-  # (left boundary, top boundary, right boundary, bottom boundary).
-  crop_boundary = (1, 42, 1279, 510)
   number_of_images = 24 # Y rotations
   vertical_rotations = 1 # X rotations
   # Initial parameters. Mostly, you won't need to set these.
@@ -32,11 +30,26 @@ if __name__ == '__main__':
   def enum_callback(hwnd, _):
     """
     Focus and maximise HLMV
+    then compute the cropping boundary based on its resulting size
     """
     if GetWindowText(hwnd)[:7] == 'models\\':
       SetForegroundWindow(hwnd)
       ShowWindow(hwnd, SW_MAXIMIZE)
+      rect = GetWindowRect(hwnd)
+      global crop_boundary
+      crop_boundary = (
+        rect[0] + 10, # Left edge <-> image left
+        rect[1] + 50, # Top edge <-> image top
+        rect[2] - 10, # Left edge <-> image right
+        rect[3] - 250 # Top edge <-> image bottom
+      )
+  crop_boundary = None
   EnumWindows(enum_callback, [])
+  if not crop_boundary:
+    print("Couldn't find HLMV, is it open with a model loaded?")
+    exit()
+  else:
+    print("Auto-computed crop boundary:", crop_boundary)
 
   white_images = []
   model.set_background(False)

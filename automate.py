@@ -39,7 +39,7 @@ if __name__ == '__main__':
       global crop_boundary
       crop_boundary = (
         rect[0] + 10, # Left edge <-> image left
-        rect[1] + 50, # Top edge <-> image top
+        rect[1] + 51, # Top edge <-> image top
         rect[2] - 10, # Left edge <-> image right
         rect[3] - 250 # Top edge <-> image bottom
       )

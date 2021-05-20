@@ -10,10 +10,6 @@ from os import path, remove
 from PIL.Image import ANTIALIAS, fromarray, new
 from PIL import ImageFile
 from numpy import array, dstack, inner, uint8
-from wikitools import wiki
-from wikitools.wikifile import File
-from wikitools.page import Page
-wiki = wiki.Wiki('https://wiki.teamfortress.com/w/api.php')
 
 class ImageProcessor(object):
   """
@@ -138,6 +134,11 @@ class ImageProcessor(object):
       ','.join([str(o) for o in offset_map]),
       self.target_dimension
       )
+    # Late imports because this *doesn't work* for python3. But I'd rather not fail that hard yet.
+    from wikitools import wiki
+    from wikitools.wikifile import File
+    from wikitools.page import Page
+    wiki = wiki.Wiki('https://wiki.teamfortress.com/w/api.php')
 
     username = raw_input('Wiki username: ')
     while not wiki.isLoggedIn():

@@ -8,7 +8,7 @@ def mem(*params):
   Returns parsed response, raises all exceptions
   """
   params = ['mem.exe'] + [str(param) for param in params]
-  proc = Popen(params, stdout=PIPE, stderr=PIPE)
+  proc = Popen(params, stdout=PIPE, stderr=PIPE, universal_newlines=True)
   stdout, stderr = proc.communicate()
   if stderr:
     raise Exception(stderr)

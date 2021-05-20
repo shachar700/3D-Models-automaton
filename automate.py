@@ -54,16 +54,16 @@ if __name__ == '__main__':
   white_images = []
   model.set_background(False)
   # Loops in this order to get the images in the right order.
-  for y_rot in xrange(0, 360, 360//number_of_images):
-    for x_rot in xrange(-15*vertical_rotations, 15*vertical_rotations+1, 15):
+  for y_rot in range(0, 360, 360//number_of_images):
+    for x_rot in range(-15*vertical_rotations, 15*vertical_rotations+1, 15):
       model.rotate(x_rot, y_rot)
       sleep(0.02) # Wait for redraw
       white_images.append(grab().crop(crop_boundary))
 
   black_images = []
   model.set_background(True)
-  for y_rot in xrange(0, 360, 360//number_of_images):
-    for x_rot in xrange(-15*vertical_rotations, 15*vertical_rotations+1, 15):
+  for y_rot in range(0, 360, 360//number_of_images):
+    for x_rot in range(-15*vertical_rotations, 15*vertical_rotations+1, 15):
       model.rotate(x_rot, y_rot)
       sleep(0.02) # Wait for redraw
       black_images.append(grab().crop(crop_boundary))

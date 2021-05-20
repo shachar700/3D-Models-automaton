@@ -15,3 +15,8 @@ Requirements
 * pip install wikitools
 
 If you have trouble with pip, install the Microsoft Visual C++ compiler.
+
+
+Usage
+=============
+See [TFW:3D Models](https://wiki.teamfortress.com/wiki/Team_Fortress_Wiki:3D_Models#Workflow)

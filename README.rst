@@ -10,9 +10,9 @@ Requirements
 * Python 2.6+
 * pip install numpy
 * pip install pillow
-* pip install poster
+* pip install poster (optional, available for Python 2.x only)
 * pip install pypiwin32
-* pip install wikitools
+* pip install wikitools (available for Python 2.x only)
 
 If you have trouble with pip, install the Microsoft Visual C++ compiler.
 

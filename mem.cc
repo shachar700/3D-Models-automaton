@@ -50,29 +50,30 @@ int main(int argc, char *argv[]) {
       break; // All that setup just to get the base address and handle
     }
   }
-  
+
+  # Offsets from HLMV v1.22
   LPVOID offset;
   if (strcmp(argv[1], "rot") == 0) { // Absolute Rotation
-    offset = (LPVOID)(base_addr + 0x23D520);
+    offset = (LPVOID)(base_addr + 0x23C510);
   } else if (strcmp(argv[1], "trans") == 0) { // Absolute Translation
-    offset = (LPVOID)(base_addr + 0x23D52C);
+    offset = (LPVOID)(base_addr + 0x23C51C);
   } else if (strcmp(argv[1], "color") == 0) { // Background color
-    offset = (LPVOID)(base_addr + 0x240224);
+    offset = (LPVOID)(base_addr + 0x23F214);
   } else if (strcmp(argv[1], "bg") == 0) { // Enable Background
-    offset = (LPVOID)(base_addr + 0x2401EC);
+    offset = (LPVOID)(base_addr + 0x23F1DC);
   } else if (strcmp(argv[1], "nm") == 0) { // Normal Maps
-    offset = (LPVOID)(base_addr + 0x24019F);
+    offset = (LPVOID)(base_addr + 0x23F18F);
   } else if (strcmp(argv[1], "spec") == 0) { // Specular
-    offset = (LPVOID)(base_addr + 0x2401A1);
+    offset = (LPVOID)(base_addr + 0x23F191);
   } else if (strcmp(argv[1], "ob") == 0) { // Overbrightening
-    offset = (LPVOID)(base_addr + 0x24024E);
+    offset = (LPVOID)(base_addr + 0x23F23E);
   } else if (strcmp(argv[1], "lrot") == 0) { // Light Rotation
     offset = (LPVOID)(base_addr + 0x2401B8);
   } else {
     fprintf(stderr, "Unknown type parameter: %s\n", argv[1]);
     exit(EXIT_FAILURE);
   }
-  
+
   if (argc == 2) {
     if (strcmp(argv[1], "bg") == 0) {
       int background;

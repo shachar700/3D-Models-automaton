@@ -3,13 +3,12 @@
 #include <windows.h> // everything else
 #include <psapi.h> // Module processing. Has to be after windows.h
 #include <tlhelp32.h> // getting the PID
-// To compile: gcc mem.cc -o mem -lpsapi
 
 // http://stackoverflow.com/q/1387064
 void throwError() {
   wchar_t message[256];
   FormatMessageW(4096, NULL, GetLastError(), 1024, message, 256, NULL);
-  fprintf(stderr, "Error: %s\n", message);
+  fprintf(stderr, "Error: %ls\n", message);
   exit(EXIT_FAILURE);
 }
 
@@ -31,7 +30,7 @@ int main(int argc, char *argv[]) {
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
   while (Process32Next(snapshot, &entry)) {
-    if (strcmp(entry.szExeFile, "hlmv.exe") == 0) {
+    if (wcscmp(entry.szExeFile, L"hlmv.exe") == 0) {
       pid = entry.th32ProcessID;
       break;
     }
@@ -44,7 +43,7 @@ int main(int argc, char *argv[]) {
   }
   EnumProcessModules(handle, module_list, sizeof(module_list) / sizeof(HMODULE), &num_results);
   for (int i = 0; i < num_results / sizeof(HMODULE); i++) {
-    GetModuleBaseName(handle, module_list[i], name, sizeof(name));
+    GetModuleBaseNameA(handle, module_list[i], name, sizeof(name));
     if (strcmp(name, "hlmv.exe") == 0) {
       base_addr = (uintptr_t)module_list[i];
       break; // All that setup just to get the base address and handle

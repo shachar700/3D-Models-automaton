@@ -2,3 +2,5 @@
 *.pyo
 temp.jpg
 venv
+mem.pdb
+mem/*

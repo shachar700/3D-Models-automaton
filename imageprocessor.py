@@ -134,6 +134,8 @@ class ImageProcessor(object):
       ','.join([str(o) for o in offset_map]),
       self.target_dimension
       )
+    with open("file.txt", "w") as f:
+      f.write(description)
     # Late imports because this *doesn't work* for python3. But I'd rather not fail that hard yet.
     from wikitools import wiki
     from wikitools.wikifile import File
